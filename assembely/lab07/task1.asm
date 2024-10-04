@@ -1,54 +1,66 @@
+
 .model small
 .stack 100h
-.data          
-   msg db 'Hello world$',   ; Original message with '$' marking the end
-   strlen equ $ - msg           ; Calculate string length (excluding the '$')
-   reversed db 12 DUP('$')      ; Space to store the reversed string
-
+.data
+original db "My name is pasha.$", 0    ; String to be reversed
+msg1 db "Original String: $", 0Dh, 0Ah, 0   ; Message with newline after original string
+msg2 db "Reversed String: $", 0Dh, 0Ah, 0   ; Message with newline before reversed string
+newline db 0Dh, 0Ah, '$'
+                 
 .code
-main proc
+  main proc
+    ; Initialize DS
     mov ax, @data
-    mov ds, ax                  ; Initialize data segment
+    mov ds, ax
 
-    ; Display the original string
-    mov dx, OFFSET msg          ; Load address of msg
-    mov ah, 09h                 ; DOS interrupt 21h for string display
+    ; Display Original String
+    mov ah, 09h              
+    lea dx, [msg1]           
     int 21h
 
-    ; Initialize SI for pushing characters onto stack
-    lea si, msg                 ; Load address of the original string into SI
-    mov cx, strlen              ; Store the length of the string into CX
-    
-    ; Adjust CX to length - 1 because strlen includes the '$' marker
-    dec cx
+    lea dx, [original]        
+    int 21h                  
 
-push_loop:
-    mov al, [si]                ; Load character from the original string
-    push ax                     ; Push character onto stack
-    inc si                      ; Move to the next character
-    loop push_loop              ; Repeat until all characters are pushed
-
-    ; Display a newline
-    mov ah, 02h
-    mov dl, 13                  ; Carriage return (CR)
-    int 21h
-    mov dl, 10                  ; Line feed (LF)
+    ; Display newline after the original string
+    lea dx, [newline]
     int 21h
 
-    ; Popping characters from the stack to display the reversed string
-    mov cx, strlen              ; Restore CX to the original length
-    dec cx                      ; Adjust for the loop
+    ; Reverse String
+    lea si, [original]        
+    mov cx, 0                 
 
-pop_loop:
-    pop ax                      ; Pop the character from the stack
-    mov dl, al                  ; Transfer character to DL for display
-    mov ah, 02h                 ; DOS interrupt 21h to display a single character
+  count_loop:
+    mov al, [si]             
+    cmp al, "$"               
+    je done_counting          
+    push ax                   
+    inc si                    
+    inc cx                    
+    jmp count_loop            
+
+  done_counting:
+    ; Display Reversed String
+    mov ah, 09h               
+    lea dx, [msg2]            
     int 21h
-    loop pop_loop               ; Repeat until all characters are displayed
 
-    ; End the program
-    mov ah, 4Ch                 ; DOS interrupt 21h for program termination
+  reverse_stack:
+    pop ax                    
+    mov dl, al                
+
+    mov ah, 02h               
+    int 21h                   
+
+    loop reverse_stack        
+
+    ; Display newline after reversed string
+    lea dx, [newline]
     int 21h
 
-main endp
+    ; End Program
+  done_printing:
+    mov ah, 4Ch              
+    int 21h
+
+  main endp
 end main

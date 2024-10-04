@@ -1,56 +1,71 @@
-.stack 100h
-.model small
-.data
-    array db 5, 20, 7, 25, 15, 30   ; Array of integers
-    largest db 0                    ; To store the largest number
-    msg db 'Largest number: $'      ; Message to display the result
 
+.model small
+.stack 100h
+.data
+    array DB 5, 1, 7, 2, 9  
+    largest DB 0             
+    output DB 'Largest number is: $' 
+    newline DB 0Dh, 0Ah, '$'   
+    
 .code
-main proc
-    mov ax, @data                   ; Initialize the data segment
+   main proc
+   
+    mov ax, @data
     mov ds, ax
 
-    mov bx, offset array            ; Load the address of the array into BX
-    mov cx, 6                       ; Set loop counter (size of the array)
+    lea si, array     
+    mov cx, 5        
 
-    ; Initialize the largest number with the first element of the array
-    mov al, [bx]                    ; Load the first element of the array into AL
-    mov [largest], al               ; Store it in the 'largest' variable
+    mov largest, 0
 
-    inc bx                          ; Point to the next element in the array
-    dec cx                          ; Decrease loop counter (we already processed one element)
+  find_largest:
+    mov al, [si]      
+    cmp al, largest    
+    jle skip_update   
+    mov largest, al    
+  skip_update:
+    inc si             
+    loop find_largest  
 
-compare_loop:
-    mov al, [bx]                    ; Load the current array element into AL
+  display_result:
+  
+    mov ah, 09h
+    lea dx, output
+    int 21h
     
-    cmp al, [largest]               ; Compare AL with current largest
-    jle skip_update                 ; If AL <= largest, skip update
+    mov al, largest
+    mov ah, 0           
 
-    mov [largest], al               ; Update largest with the new value if AL is greater
+    cmp al, 10
+    jl  print_single_digit
 
-skip_update:
-    inc bx                          ; Point to the next element in the array
-    loop compare_loop               ; Decrement CX and loop if CX != 0
+    mov bl, 10          
+    div bl              
+    add al, '0'         
+    mov dl, al
+    mov ah, 02h
+    int 21h             
+    
+    mov al, ah          
+    add al, '0'         
+    mov dl, al
+    mov ah, 02h
+    int 21h             
+    jmp print_newline
 
-    ; Now that we have the largest number, display the result
+  print_single_digit:
+    add al, '0'         
+    mov dl, al
+    mov ah, 02h
+    int 21h             
 
-    ; Print the message "Largest number: "
-    mov ah, 09h                     ; Function to display a string
-    lea dx, msg                     ; Load the address of the message
-    int 21h                         ; Display the message
+  print_newline:
+   
+    mov ah, 09h
+    lea dx, newline
+    int 21h
 
-    ; Convert the largest number to ASCII and display it
-    mov al, [largest]               ; Load the largest number into AL
-    add al, 30h                     ; Convert it to ASCII (0-9 range)
-    mov dl, al                      ; Move the ASCII character to DL for display
-
-    ; Display the largest number
-    mov ah, 02h                     ; Function to display a character
-    int 21h                         ; Print the character in DL
-
-    ; End the program
-    mov ah, 4Ch                     ; Function to exit the program
-    int 21h                         ; Call DOS interrupt to terminate
-
-main endp
+    mov ah, 4Ch
+    int 21h
+  main endp
 end main
